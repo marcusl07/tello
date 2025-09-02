@@ -1,0 +1,3 @@
+from record_tello import record_tello_video_stream
+
+record_tello_video_stream()

@@ -1,0 +1,132 @@
+# OpenCV (cv2) for video processing, datetime for timestamping, tello for our drone object.
+import cv2
+from djitellopy import tello
+from datetime import datetime
+from time import sleep
+
+def detect_face(frame):
+    f = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+
+    gray_img = cv2.cvtColor(f, cv2.COLOR_BGR2GRAY)
+    face_classifier = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    face = face_classifier.detectMultiScale(gray_img, scaleFactor=1.1, minNeighbors=5, minSize=(40, 40))
+
+    return face
+
+
+def record_tello_video_stream(frame_read: tello.BackgroundFrameRead, out: cv2.VideoWriter):
+    """
+    Run video recording from Tello drone.
+
+    Parameters:
+    - frame_read: Tello frame reader object
+    - out: Video writer object for recording
+
+    This function continuously captures frames from the Tello drone's video stream,
+    writes the frames to the output video file, and displays the frames in a window.
+    Press 'q' to stop recording and close the window.
+
+    Note: Adjust the waitKey argument to match the desired frame rate.
+    """
+    try:
+        i = 0
+        while True:
+            # i += 1
+            # if i > 100:
+            #     break
+            # Capture a frame from the Tello video stream
+            frame = frame_read.frame
+
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
+
+            # Write the captured frame to the output video file
+            out.write(frame)
+
+            # Display the captured frame in a window
+            cv2.imshow("Frame", frame)
+
+            # Check for the 'q' key press to exit the loop and stop recording
+            if cv2.waitKey(33) & 0xFF == ord('q'):  # Change 33 to 1 for 30fps
+                break
+    except Exception as e:
+        print(f'An exception occurred in recording tellos video stream {e}')
+    finally:
+        # Close the window and release the video writer
+        cv2.destroyAllWindows()
+        out.release()
+
+
+
+        
+
+def main():
+    """
+    Main function to connect to Tello drone, record video, and reboot.
+
+    This function performs the following steps:
+    1. Initializes a connection with the Tello drone.
+    2. Enables video streaming from the Tello.
+    3. Retrieves the frame reader object for capturing video frames.
+    4. Sets up a video writer for recording the video to a file.
+    5. Calls the 'run_tello_video' function to start capturing and recording video.
+    6. Displays an end-of-main message.
+    7. Reboots the Tello drone.
+    """
+    # create a timestamp using the current date and time to uniquely name each recorded video.
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+
+    # Initialize Tello drone and establish connection
+    drone = tello.Tello(host='192.168.0.167')
+    drone.connect()
+    drone.streamon()
+
+    # Obtain frame reader from Tello and get frame dimensions
+    frame_read = drone.get_frame_read()
+    sleep(0.5)
+    H, W, _ = frame_read.frame.shape
+
+    drone.takeoff()
+
+    # Run video recording function
+    # record_tello_video_stream(frame_read, out)
+    while True:
+        # Capture a frame from the Tello video stream
+        frame = frame_read.frame
+
+        face = detect_face(frame)
+        if len(face) > 0:
+            (x, y, w, h) = face[0]
+            print(x, y, w, h)
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 4)
+            if x+w/2 > W/2+10:
+                drone.rotate_clockwise(20)
+            elif x+w/2 < W/2-10:
+                drone.rotate_counter_clockwise(20)
+
+            if y+h/2 > H/2+10:
+                drone.move('down', 25)
+            elif y+h/2 < W/2-10:
+                drone.move('up', 25)
+
+
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
+
+        # Display the captured frame in a window
+        cv2.imshow("Frame", frame)
+
+        # Check for the 'q' key press to exit the loop and stop recording
+        if cv2.waitKey(33) & 0xFF == ord('q'):  # Change 33 to 1 for 30fps
+            break
+
+    drone.land() 
+    
+    cv2.destroyAllWindows()
+    out.release()
+    # Display end-of-main message and reboot the drone
+    print('end of main, calling drone.reboot')
+    drone.reboot()
+
+
+if __name__ == "__main__":
+    main()
