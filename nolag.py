@@ -101,7 +101,7 @@ def main():
     time.sleep(0.5)
     H, W, _ = frame_read.frame.shape
 
-    send("takeoff", 3)
+    # send("takeoff", 3)
 
     while True:
         key = cv2.waitKey(1) & 0xFF
@@ -111,15 +111,23 @@ def main():
         # Capture a frame from the Tello video stream
         frame = frame_read.frame
 
-        face_obj.update(frame)
+        # face_obj.update(frame)
 
-        face = []
+        # face = []
 
-        if face_obj.inited:
-            if len(face_obj.face_avg) > 0:
-                face = face_obj.face_avg
-            elif len(face_obj.face_predict) > 0:
-                face = face_obj.face_predict
+        # if face_obj.inited:
+        #     if len(face_obj.face_avg) > 0:
+        #         face = face_obj.face_avg
+        #     elif len(face_obj.face_predict) > 0:
+        #         face = face_obj.face_predict
+        #     if len(face_obj.faces[face_obj.i]) == 0 and len(face) > 0:
+        #         print('no face fixed')
+
+        # print(face_obj.get_face())
+        # print(face)
+        # print()
+
+        face = record_tello.detect_face(frame)
 
         if len(face) > 0:
             (x, y, w, h) = face[0]
@@ -128,15 +136,15 @@ def main():
             x_move = int(x_pid.getAmount(x+w/2 - W/2) )
             y_move = int(y_pid.getAmount(y+h/2 - H/2))
 
-            if x_move >= 1:
-                send(f"cw {x_move}", 0)
-            elif x_move <= -1:
-                send(f"ccw {-x_move}", 0)
+            # if x_move >= 1:
+            #     send(f"cw {x_move}", 0)
+            # elif x_move <= -1:
+            #     send(f"ccw {-x_move}", 0)
 
-            if y_move >= 20:
-                send(f'down {y_move}', 0)
-            elif y_move <= -20:
-                send(f'up {-y_move}', 0)
+            # if y_move >= 20:
+            #     send(f'down {y_move}', 0)
+            # elif y_move <= -20:
+            #     send(f'up {-y_move}', 0)
 
         time.sleep(0.05)
 
