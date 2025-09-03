@@ -9,6 +9,7 @@ import cv2
 from djitellopy import tello
 from get_online_drones import get_online_drones
 
+
 # IP and port of Tellos
 tello_addresses_og = [   
 	"192.168.0.152",
@@ -35,7 +36,7 @@ local_ports = []
 for x in range(NUM_TELLOS):
 	local_ports.append(9010+x)
 
-local_address = '192.168.0.138'
+local_address = '192.168.0.125'
 
 
 socks = []
@@ -88,12 +89,7 @@ def main():
     receiveThread.daemon = True
     receiveThread.start()
 
-    ips = get_online_drones()
-    if len(ips) == 0:
-        print('No drones online')
-        return
-
-    drone = tello.Tello(host=ips[0])
+    drone = tello.Tello(host=tello_addresses[0])
     drone.connect()
     # Put Tello into command mode
     send("command", 3)
@@ -101,7 +97,7 @@ def main():
     send("streamon", 3)
 
     frame_read = drone.get_frame_read()
-    sleep(0.5)
+    time.sleep(0.5)
     H, W, _ = frame_read.frame.shape
 
     send("takeoff", 3)
@@ -121,15 +117,16 @@ def main():
             print(x, y, w, h)
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 4)
             if x+w/2 > W/2+10:
-                send("cw 20", 3)
+                send("cw 20", 0)
             elif x+w/2 < W/2-10:
-                send("ccw 20", 3)
+                send("ccw 20", 0)
 
             if y+h/2 > H/2+10:
-                send("down 20", 3)
+                send("down 20", 0)
             elif y+h/2 < W/2-10:
-                send("up 20", 3)
+                send("up 20", 0)
 
+        time.sleep(0.1)
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
 
