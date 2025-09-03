@@ -4,6 +4,7 @@ from djitellopy import tello
 from datetime import datetime
 from time import sleep
 from pid import PID
+from get_online_drones import get_online_drones
 
 def detect_face(frame):
     f = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
@@ -82,7 +83,12 @@ def main():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # Initialize Tello drone and establish connection
-    drone = tello.Tello(host='192.168.0.167')
+    ips = get_online_drones()
+    if len(ips) == 0:
+        print('No drones online')
+        return
+
+    drone = tello.Tello(host=ips[0])
     drone.connect()
     drone.streamon()
 

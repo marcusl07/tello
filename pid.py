@@ -2,13 +2,14 @@ from time import time
 
 class PID(object):
 	"""docstring for PID"""
-	def __init__(self, p, i, d, _min, _max):
+	def __init__(self, p, i, d, _min, _max, margin):
 		super(PID, self).__init__()
 		self.p = p
 		self.i = i
 		self.d = d
 		self.min = _min
 		self.max = _max
+		self.margin = margin
 
 		self.int_err = 0
 		self.prev_err = 0
@@ -18,7 +19,11 @@ class PID(object):
 		self.satLow = False
 		
 	def getAmount(err):
+		if abs(err) < margin:
+			return 0
+
 		res = 0
+
 		if self.prev_t == -1:
 			self.prev_err = err
 			self.prev_t = time()
@@ -43,3 +48,5 @@ class PID(object):
 		else:
 			satLow = False
 			satHigh = False
+
+		return res
