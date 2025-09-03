@@ -57,6 +57,11 @@ def record_tello_video_stream(frame_read: tello.BackgroundFrameRead, out: cv2.Vi
 
 def track_face(frame_read: tello.BackgroundFrameRead, drone: tello.Tello, H: int, W: int):
     while True:
+
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
+            break
+
         # Capture a frame from the Tello video stream
         frame = frame_read.frame
 
@@ -71,9 +76,9 @@ def track_face(frame_read: tello.BackgroundFrameRead, drone: tello.Tello, H: int
                 drone.rotate_counter_clockwise(20)
 
             if y+h/2 > H/2+10:
-                drone.move('down', 25)
+                drone.move('down', 20)
             elif y+h/2 < W/2-10:
-                drone.move('up', 25)
+                drone.move('up', 20)
 
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
@@ -117,7 +122,7 @@ def main():
     # Run video recording function
     fourcc = cv2.VideoWriter_fourcc('m','p','4','v')
     out = cv2.VideoWriter(f'{timestamp}_output.mp4', fourcc, fps=30, frameSize=(W, H))
-    record_tello_video_stream(frame_read, out)
+    # record_tello_video_stream(frame_read, out)
     track_face(frame_read, drone, H, W)
 
     drone.land() 
