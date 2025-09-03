@@ -8,24 +8,12 @@ import record_tello
 import cv2
 from djitellopy import tello
 from get_online_drones import get_online_drones
+from pid import PID
 
 
-# IP and port of Tellos
-tello_addresses_og = [   
-	"192.168.0.152",
-    "192.168.0.167",
-    "192.168.0.177"]
 
-tello_addresses = tello_addresses_og[:]
 
-for ip in tello_addresses_og:
-    toping = Popen(['ping', '-c', '1', '-W', '50', ip], stdout=PIPE)
-    output = toping.communicate()[0]
-    hostalive = toping.returncode
-    if hostalive != 0:
-        tello_addresses.remove(ip)
-        print(ip + ' not online')
-
+tello_addresses = get_online_drones()
 
 tello_port = 8889
 
@@ -36,7 +24,7 @@ local_ports = []
 for x in range(NUM_TELLOS):
 	local_ports.append(9010+x)
 
-local_address = '192.168.0.125'
+local_address = '192.168.0.138' #'192.168.0.125'
 
 
 socks = []
@@ -114,24 +102,26 @@ def main():
         face = record_tello.detect_face(frame)
         if len(face) > 0:
             (x, y, w, h) = face[0]
-            print(x, y, w, h)
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 4)
-            if x+w/2 > W/2+10:
-                send("cw 20", 0)
-            elif x+w/2 < W/2-10:
-                send("ccw 20", 0)
 
-            if y+h/2 > H/2+10:
-                send("down 20", 0)
-            elif y+h/2 < W/2-10:
-                send("up 20", 0)
+            x_move = int( x_pid.getAmount(x+w/2 - W/2) )
+            y_move = int(y_pid.getAmount(y+h/2 - H/2))
 
-        time.sleep(0.1)
+            if x_move >= 1:
+                send(f"cw {x_move}", 0)
+            elif x_move <= -1:
+                send(f"ccw {-x_move}", 0)
+
+            if y_move >= 20:
+                send(f'down {y_move}')
+            elif y_move <= -20:
+                send(f'up {-y_move}')
+
+        time.sleep(0.05)
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
 
         # Display the captured frame in a window
-        print("framejak")
         cv2.imshow("Frame", frame)
 
         # Check for the 'q' key press to exit the loop and stop recording

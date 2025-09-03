@@ -37,7 +37,7 @@ class PID(object):
 
 			res = self.p*err + self.i*self.int_err + self.d*der_err
 
-		print(res, err)
+		# print(res, err)
 
 		if res > self.max:
 			res = self.max
