@@ -45,12 +45,11 @@ def record_tello_video_stream(frame_read: tello.BackgroundFrameRead, out: cv2.Vi
         out.release()
 
 def track_face(frame_read: tello.BackgroundFrameRead, drone: tello.Tello, H: int, W: int):
+    #Init PID objects
+    x_pid = PID(0.1, 0, 0.2, -180, 180, 10)
+    y_pid = PID(0.2, 0, 0.1, -200, 200, 10)
+
     while True:
-
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
-            break
-
         # Capture a frame from the Tello video stream
         frame = frame_read.frame
 
@@ -59,21 +58,27 @@ def track_face(frame_read: tello.BackgroundFrameRead, drone: tello.Tello, H: int
             (x, y, w, h) = face[0]
             print(x, y, w, h)
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 4)
-            if x+w/2 > W/2+10:
-                drone.rotate_clockwise(20)
-            elif x+w/2 < W/2-10:
-                drone.rotate_counter_clockwise(20)
 
-            if y+h/2 > H/2+10:
-                drone.move('down', 20)
-            elif y+h/2 < W/2-10:
-                drone.move('up', 20)
+            x_move = int( x_pid.getAmount(x+w/2 - W/2) )
+
+            if x_move >= 1:
+                drone.rotate_clockwise(x_move)
+            elif x_move <= -1:
+                drone.rotate_counter_clockwise(-x_move)
+
+            print('y--')
+            y_move = int(y_pid.getAmount(y+h/2 - H/2))
+
+            if y_move >= 20:
+                drone.move('down', y_move)
+            elif y_move <= -20:
+                drone.move('up', -y_move)
 
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
 
         # Display the captured frame in a window
-        cv2.imshow("Frame", frame)
+        # cv2.imshow("Frame", frame)
 
         # Check for the 'q' key press to exit the loop and stop recording
         if cv2.waitKey(33) & 0xFF == ord('q'):  # Change 33 to 1 for 30fps
@@ -92,6 +97,8 @@ def main():
     drone.connect()
     drone.streamon()
 
+
+
     # Obtain frame reader from Tello and get frame dimensions
     frame_read = drone.get_frame_read()
     sleep(0.5)
@@ -100,43 +107,16 @@ def main():
     drone.takeoff()
 
     # Run video recording function
-    # record_tello_video_stream(frame_read, out)
-    while True:
-        # Capture a frame from the Tello video stream
-        frame = frame_read.frame
-
-        face = detect_face(frame)
-        if len(face) > 0:
-            (x, y, w, h) = face[0]
-            print(x, y, w, h)
-            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 4)
-            if x+w/2 > W/2+10:
-                drone.rotate_clockwise(20)
-            elif x+w/2 < W/2-10:
-                drone.rotate_counter_clockwise(20)
-
-            if y+h/2 > H/2+10:
-                drone.move('down', 25)
-            elif y+h/2 < W/2-10:
-                drone.move('up', 25)
-
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
-
-        # Display the captured frame in a window
-        cv2.imshow("Frame", frame)
-
-        # Check for the 'q' key press to exit the loop and stop recording
-        if cv2.waitKey(33) & 0xFF == ord('q'):  # Change 33 to 1 for 30fps
-            break
-    fourcc = cv2.VideoWriter_fourcc('m','p','4','v')
-    out = cv2.VideoWriter(f'{timestamp}_output.mp4', fourcc, fps=30, frameSize=(W, H))
+    # fourcc = cv2.VideoWriter_fourcc('m','p','4','v')
+    # out = cv2.VideoWriter(f'{timestamp}_output.mp4', fourcc, fps=30, frameSize=(W, H))
     # record_tello_video_stream(frame_read, out)
     track_face(frame_read, drone, H, W)
+    print('b')
 
     drone.land() 
     
     cv2.destroyAllWindows()
-    out.release()
+    # out.release()
     # Display end-of-main message and reboot the drone
     print('end of main, calling drone.reboot')
     drone.reboot()

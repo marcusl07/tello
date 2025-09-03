@@ -18,8 +18,8 @@ class PID(object):
 		self.satHigh = False
 		self.satLow = False
 		
-	def getAmount(err):
-		if abs(err) < margin:
+	def getAmount(self, err):
+		if abs(err) < self.margin:
 			return 0
 
 		res = 0
@@ -30,23 +30,25 @@ class PID(object):
 			res = self.p*err
 		else:
 			dt = time()-self.prev_t
-			if ((not satHigh) or (self.prev_err < 0)) or ((not satLow) or (self.prev_err > 0)):
+			if ((not self.satHigh) or (self.prev_err < 0)) or ((not self.satLow) or (self.prev_err > 0)):
 				self.int_err += self.prev_err*dt
 			
 			der_err = (err-self.prev_err)/dt
 
 			res = self.p*err + self.i*self.int_err + self.d*der_err
 
+		print(res, err)
+
 		if res > self.max:
 			res = self.max
-			satHigh = True
-			satLow = False
+			self.satHigh = True
+			self.satLow = False
 		elif res < self.min:
 			res = self.min
-			satLow = True
-			satHigh = False
+			self.satLow = True
+			self.satHigh = False
 		else:
-			satLow = False
-			satHigh = False
+			self.satLow = False
+			self.satHigh = False
 
 		return res
