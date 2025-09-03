@@ -42,9 +42,6 @@ def record_tello_video_stream(frame_read: tello.BackgroundFrameRead, out: cv2.Vi
         # Close the window and release the video writer
         cv2.destroyAllWindows()
         out.release()
-<<<<<<< HEAD
-        
-=======
 
 def track_face(frame_read: tello.BackgroundFrameRead, drone: tello.Tello, H: int, W: int):
     while True:
@@ -75,7 +72,6 @@ def track_face(frame_read: tello.BackgroundFrameRead, drone: tello.Tello, H: int
         # Check for the 'q' key press to exit the loop and stop recording
         if cv2.waitKey(33) & 0xFF == ord('q'):  # Change 33 to 1 for 30fps
             break
->>>>>>> 9b24329e77a760cb7cf8c81caa4ecf1a64c56c67
 
 def main():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -93,7 +89,6 @@ def main():
     drone.takeoff()
 
     # Run video recording function
-<<<<<<< HEAD
     # record_tello_video_stream(frame_read, out)
     while True:
         # Capture a frame from the Tello video stream
@@ -122,12 +117,10 @@ def main():
         # Check for the 'q' key press to exit the loop and stop recording
         if cv2.waitKey(33) & 0xFF == ord('q'):  # Change 33 to 1 for 30fps
             break
-=======
     fourcc = cv2.VideoWriter_fourcc('m','p','4','v')
     out = cv2.VideoWriter(f'{timestamp}_output.mp4', fourcc, fps=30, frameSize=(W, H))
     record_tello_video_stream(frame_read, out)
     track_face(frame_read, drone, H, W)
->>>>>>> 9b24329e77a760cb7cf8c81caa4ecf1a64c56c67
 
     drone.land() 
     
