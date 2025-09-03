@@ -9,6 +9,7 @@ import cv2
 from djitellopy import tello
 from get_online_drones import get_online_drones
 from pid import PID
+from face import Face
 
 
 
@@ -80,6 +81,9 @@ def main():
     x_pid = PID(p=0.05, i=0, d=0.05, _min=-180, _max=180, margin=10)
     y_pid = PID(p=0.05, i=0, d=0.05, _min=-200, _max=200, margin=10)
 
+    #init Face
+    face_obj = Face()
+
     # Create and start a listening thread that runs in the background
     # This utilizes our receive functions and will continuously monitor for incoming messages
     receiveThread = threading.Thread(target=receive)
@@ -107,7 +111,16 @@ def main():
         # Capture a frame from the Tello video stream
         frame = frame_read.frame
 
-        face = record_tello.detect_face(frame)
+        face_obj.update(frame)
+
+        face = []
+
+        if face_obj.inited:
+            if len(face_obj.face_avg) > 0:
+                face = face_obj.face_avg
+            elif len(face_obj.face_predict) > 0:
+                face = face_obj.face_predict
+
         if len(face) > 0:
             (x, y, w, h) = face[0]
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 4)
