@@ -24,7 +24,8 @@ local_ports = []
 for x in range(NUM_TELLOS):
 	local_ports.append(9010+x)
 
-local_address = '192.168.0.138' #'192.168.0.125'
+# local_address = '192.168.0.138' 
+local_address = '192.168.0.125'
 
 
 socks = []
@@ -71,6 +72,14 @@ def receive():
                 break
 
 def main():
+    if NUM_TELLOS == 0:
+        print("No Tello drones found.")
+        return
+    
+    #Init PID objects
+    x_pid = PID(p=0.05, i=0, d=0.05, _min=-180, _max=180, margin=10)
+    y_pid = PID(p=0.05, i=0, d=0.05, _min=-200, _max=200, margin=10)
+
     # Create and start a listening thread that runs in the background
     # This utilizes our receive functions and will continuously monitor for incoming messages
     receiveThread = threading.Thread(target=receive)
@@ -91,7 +100,6 @@ def main():
     send("takeoff", 3)
 
     while True:
-
         key = cv2.waitKey(1) & 0xFF
         if key == ord('q'):
             break
@@ -104,7 +112,7 @@ def main():
             (x, y, w, h) = face[0]
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 4)
 
-            x_move = int( x_pid.getAmount(x+w/2 - W/2) )
+            x_move = int(x_pid.getAmount(x+w/2 - W/2) )
             y_move = int(y_pid.getAmount(y+h/2 - H/2))
 
             if x_move >= 1:
@@ -113,9 +121,9 @@ def main():
                 send(f"ccw {-x_move}", 0)
 
             if y_move >= 20:
-                send(f'down {y_move}')
+                send(f'down {y_move}', 0)
             elif y_move <= -20:
-                send(f'up {-y_move}')
+                send(f'up {-y_move}', 0)
 
         time.sleep(0.05)
 
