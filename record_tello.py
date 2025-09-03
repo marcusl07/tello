@@ -3,6 +3,7 @@ import cv2
 from djitellopy import tello
 from datetime import datetime
 from time import sleep
+from pid import PID
 
 def detect_face(frame):
     f = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
@@ -15,19 +16,6 @@ def detect_face(frame):
 
 
 def record_tello_video_stream(frame_read: tello.BackgroundFrameRead, out: cv2.VideoWriter):
-    """
-    Run video recording from Tello drone.
-
-    Parameters:
-    - frame_read: Tello frame reader object
-    - out: Video writer object for recording
-
-    This function continuously captures frames from the Tello drone's video stream,
-    writes the frames to the output video file, and displays the frames in a window.
-    Press 'q' to stop recording and close the window.
-
-    Note: Adjust the waitKey argument to match the desired frame rate.
-    """
     try:
         i = 0
         while True:
@@ -54,27 +42,10 @@ def record_tello_video_stream(frame_read: tello.BackgroundFrameRead, out: cv2.Vi
         # Close the window and release the video writer
         cv2.destroyAllWindows()
         out.release()
-
-
-
         
 
 def main():
-    """
-    Main function to connect to Tello drone, record video, and reboot.
-
-    This function performs the following steps:
-    1. Initializes a connection with the Tello drone.
-    2. Enables video streaming from the Tello.
-    3. Retrieves the frame reader object for capturing video frames.
-    4. Sets up a video writer for recording the video to a file.
-    5. Calls the 'run_tello_video' function to start capturing and recording video.
-    6. Displays an end-of-main message.
-    7. Reboots the Tello drone.
-    """
-    # create a timestamp using the current date and time to uniquely name each recorded video.
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
 
     # Initialize Tello drone and establish connection
     drone = tello.Tello(host='192.168.0.167')
@@ -108,7 +79,6 @@ def main():
                 drone.move('down', 25)
             elif y+h/2 < W/2-10:
                 drone.move('up', 25)
-
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
 
