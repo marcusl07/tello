@@ -42,7 +42,40 @@ def record_tello_video_stream(frame_read: tello.BackgroundFrameRead, out: cv2.Vi
         # Close the window and release the video writer
         cv2.destroyAllWindows()
         out.release()
+<<<<<<< HEAD
         
+=======
+
+def track_face(frame_read: tello.BackgroundFrameRead, drone: tello.Tello, H: int, W: int):
+    while True:
+        # Capture a frame from the Tello video stream
+        frame = frame_read.frame
+
+        face = detect_face(frame)
+        if len(face) > 0:
+            (x, y, w, h) = face[0]
+            print(x, y, w, h)
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 4)
+            if x+w/2 > W/2+10:
+                drone.rotate_clockwise(20)
+            elif x+w/2 < W/2-10:
+                drone.rotate_counter_clockwise(20)
+
+            if y+h/2 > H/2+10:
+                drone.move('down', 25)
+            elif y+h/2 < W/2-10:
+                drone.move('up', 25)
+
+
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
+
+        # Display the captured frame in a window
+        cv2.imshow("Frame", frame)
+
+        # Check for the 'q' key press to exit the loop and stop recording
+        if cv2.waitKey(33) & 0xFF == ord('q'):  # Change 33 to 1 for 30fps
+            break
+>>>>>>> 9b24329e77a760cb7cf8c81caa4ecf1a64c56c67
 
 def main():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -60,6 +93,7 @@ def main():
     drone.takeoff()
 
     # Run video recording function
+<<<<<<< HEAD
     # record_tello_video_stream(frame_read, out)
     while True:
         # Capture a frame from the Tello video stream
@@ -88,6 +122,12 @@ def main():
         # Check for the 'q' key press to exit the loop and stop recording
         if cv2.waitKey(33) & 0xFF == ord('q'):  # Change 33 to 1 for 30fps
             break
+=======
+    fourcc = cv2.VideoWriter_fourcc('m','p','4','v')
+    out = cv2.VideoWriter(f'{timestamp}_output.mp4', fourcc, fps=30, frameSize=(W, H))
+    record_tello_video_stream(frame_read, out)
+    track_face(frame_read, drone, H, W)
+>>>>>>> 9b24329e77a760cb7cf8c81caa4ecf1a64c56c67
 
     drone.land() 
     
