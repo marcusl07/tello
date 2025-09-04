@@ -2,17 +2,12 @@
 import socket
 import threading
 import time
-import subprocess
-from subprocess import Popen, PIPE
 import record_tello
 import cv2
 from djitellopy import tello
 from get_online_drones import get_online_drones
 from pid import PID
 from face import Face
-
-
-
 
 tello_addresses = get_online_drones()
 
@@ -25,7 +20,6 @@ local_ports = []
 for x in range(NUM_TELLOS):
 	local_ports.append(9010+x)
 
-# local_address = '192.168.0.138' 
 local_address = '192.168.0.125'
 
 
@@ -78,12 +72,9 @@ def main():
         return
     
     #Init PID objects
-    x_pid = PID(p=0.05, i=0, d=0.05, _min=-180, _max=180, margin=10)
-    y_pid = PID(p=0.05, i=0, d=0.05, _min=-200, _max=200, margin=10)
-
-    #init Face
-    face_obj = Face()
-
+    x_pid = PID(p=0.05, i=0, d=0.05, _min=-90, _max=90, margin=10)
+    y_pid = PID(p=0.15, i=0, d=0.1, _min=-100, _max=100, margin=6)
+    z_pid = PID(p=0.75, i=0, d=0.1, _min=-100, _max=100, margin=10)
     # Create and start a listening thread that runs in the background
     # This utilizes our receive functions and will continuously monitor for incoming messages
     receiveThread = threading.Thread(target=receive)
@@ -101,7 +92,7 @@ def main():
     time.sleep(0.5)
     H, W, _ = frame_read.frame.shape
 
-    # send("takeoff", 3)
+    send("takeoff", 3)
 
     while True:
         key = cv2.waitKey(1) & 0xFF
@@ -111,42 +102,34 @@ def main():
         # Capture a frame from the Tello video stream
         frame = frame_read.frame
 
-        # face_obj.update(frame)
-
-        # face = []
-
-        # if face_obj.inited:
-        #     if len(face_obj.face_avg) > 0:
-        #         face = face_obj.face_avg
-        #     elif len(face_obj.face_predict) > 0:
-        #         face = face_obj.face_predict
-        #     if len(face_obj.faces[face_obj.i]) == 0 and len(face) > 0:
-        #         print('no face fixed')
-
-        # print(face_obj.get_face())
-        # print(face)
-        # print()
-
         face = record_tello.detect_face(frame)
 
         if len(face) > 0:
-            (x, y, w, h) = face[0]
+            (x, y, w, h) = face[0] #xy is top left corner
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 4)
 
-            x_move = int(x_pid.getAmount(x+w/2 - W/2) )
+            x_move = int(x_pid.getAmount(x+w/2 - W/2))
             y_move = int(y_pid.getAmount(y+h/2 - H/2))
+            z_move = int(z_pid.getAmount(w-100))
 
-            # if x_move >= 1:
-            #     send(f"cw {x_move}", 0)
-            # elif x_move <= -1:
-            #     send(f"ccw {-x_move}", 0)
+            if y_move >= 20:
+                send(f'down {y_move}', 0.1)
+            elif y_move <= -20:
+                send(f'up {-y_move}', 0.1)
+            else:
+                print(y_move)
 
-            # if y_move >= 20:
-            #     send(f'down {y_move}', 0)
-            # elif y_move <= -20:
-            #     send(f'up {-y_move}', 0)
+            if x_move >= 1:
+                send(f"cw {x_move}", 0.1)
+            elif x_move <= -1:
+                send(f"ccw {-x_move}", 0.1)
 
-        time.sleep(0.05)
+            if z_move >= 20:
+                send(f'back {z_move}', 0.1)
+            elif z_move <= -20:
+                send(f'forward {-z_move}', 0.1)
+
+            print(f"x: {x}, y: {y}, w: {w}, h: {h}")
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
 
@@ -156,13 +139,9 @@ def main():
         # Check for the 'q' key press to exit the loop and stop recording
         if cv2.waitKey(33) & 0xFF == ord('q'):  # Change 33 to 1 for 30fps
             break
-    # # Send the takeoff command
-    # send("takeoff", 3)
-
-    # send("flip b", 3)
 
     # # Land
-    # send("land", 3)
+    send("land", 3)
 
     send("streamoff", 3)
 

@@ -13,7 +13,7 @@ ip_net = ipaddress.ip_network(u'192.168.0.1/24', strict=False)
 
 i = 0
 
-start = 152
+start = 0
 for ip in ip_net.hosts():
     i += 1
     if i < start:
