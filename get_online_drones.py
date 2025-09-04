@@ -1,20 +1,27 @@
 from subprocess import Popen, PIPE
+from djitellopy import tello
 
+"""
 # IP and port of Tellos
-tello_addresses_og = [   
-	"192.168.0.138",
-    "192.168.0.167",
-    "192.168.0.177"]
+tello_ip = "192.168.0.167"
 
 def get_online_drones():
-	tello_addresses = tello_addresses_og[:]
+	ip_out = tello_ip[:]
 
-	for ip in tello_addresses_og:
-		toping = Popen(['ping', '-c', '1', '-W', '50', ip], stdout=PIPE)
-		output = toping.communicate()[0]
-		hostalive = toping.returncode
-		if hostalive != 0:
-			tello_addresses.remove(ip)
-			print(ip + ' not online')
+	toping = Popen(['ping', '-c', '1', '-W', '50', tello_ip], stdout=PIPE)
+	hostalive = toping.returncode
+	if hostalive != 0:
+		print(tello_ip + ' not online')
 
-	return tello_addresses
+	return ip_out
+"""
+
+ips = ["192.168.0.125", "192.168.0.138", "192.168.0.167"]
+
+for ip in ips:
+    drone = tello.Tello(host=ip)
+    try:
+        drone.connect()
+        print(f"{ip} is a drone")
+    except tello.TelloException as t:
+        print(f"{ip} not a drone")

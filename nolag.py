@@ -2,47 +2,40 @@
 import socket
 import threading
 import time
-import record_tello
 import cv2
 from djitellopy import tello
-from get_online_drones import get_online_drones
 from pid import PID
-from face import Face
+from networkScan import scan_network
 
-tello_addresses = get_online_drones()
+# Uncomment to find Tello drones on the network.
+# tello_address = scan_network()
+
+# If you know the IP address of your Tello, you can hardcode it here
+tello_address = ["192.168.0.167"]
 
 tello_port = 8889
 
-NUM_TELLOS = len(tello_addresses)
-
-# IP and port of local computer
-local_ports = []
-for x in range(NUM_TELLOS):
-	local_ports.append(9010+x)
-
+NUM_TELLOS = len(tello_address)
+local_ports = [9010]
 local_address = '192.168.0.125'
 
-
 socks = []
-for x in range(NUM_TELLOS):
-    # Create a UDP connection that we'll send the command to
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    # Bind to the local address and port
-    sock.bind((local_address, local_ports[x]))
+# Create a UDP connection that we'll send the command to
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    # Save the UDP connection to socks array
-    socks.append(socket.socket(socket.AF_INET, socket.SOCK_DGRAM))
+# Bind to the local address and port
+sock.bind((local_address, local_ports[0]))
 
-    
+# Save the UDP connection to socks array
+socks.append(socket.socket(socket.AF_INET, socket.SOCK_DGRAM))
 
 # Send the message to Tello and allow for a delay in seconds
 def send(message, delay):
     # Try to send the message otherwise print the exception
     try:
-        for x in range(NUM_TELLOS):
-            socks[x].sendto(message.encode(), (tello_addresses[x], tello_port))
-            print("Sending message: " + message)
+        socks[0].sendto(message.encode(), (tello_address[0], tello_port))
+        print("Sending message: " + message)
     except Exception as e:
         print("Error sending: " + str(e))
 
@@ -55,16 +48,24 @@ def receive():
     OK = True
     while OK:
         # Try to receive the message otherwise print the exception
-        for x in range(NUM_TELLOS):
             try:
-                response, ip_address = socks[x].recvfrom(128)
-                print(f"Received message: from Tello EDU #{x}: {response.decode(encoding='utf-8')}")
+                response = socks[0].recvfrom(128)
+                print(f"Received message: from Tello EDU #{0}: {response.decode(encoding='utf-8')}")
             except Exception as e:
                 # If there's an error close the socket and break out of the loop
                 print("Error receiving: " + str(e))
-                socks[x].close()
+                socks[0].close()
                 OK = False
                 break
+
+def detect_face(frame):
+    f = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+
+    gray_img = cv2.cvtColor(f, cv2.COLOR_BGR2GRAY)
+    face_classifier = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    face = face_classifier.detectMultiScale(gray_img, scaleFactor=1.1, minNeighbors=5, minSize=(40, 40))
+
+    return face
 
 def main():
     if NUM_TELLOS == 0:
@@ -81,7 +82,7 @@ def main():
     receiveThread.daemon = True
     receiveThread.start()
 
-    drone = tello.Tello(host=tello_addresses[0])
+    drone = tello.Tello(host=tello_address[0])
     drone.connect()
     # Put Tello into command mode
     send("command", 3)
@@ -102,7 +103,7 @@ def main():
         # Capture a frame from the Tello video stream
         frame = frame_read.frame
 
-        face = record_tello.detect_face(frame)
+        face = detect_face(frame)
 
         if len(face) > 0:
             (x, y, w, h) = face[0] #xy is top left corner
@@ -116,8 +117,6 @@ def main():
                 send(f'down {y_move}', 0.1)
             elif y_move <= -20:
                 send(f'up {-y_move}', 0.1)
-            else:
-                print(y_move)
 
             if x_move >= 1:
                 send(f"cw {x_move}", 0.1)
@@ -129,7 +128,6 @@ def main():
             elif z_move <= -20:
                 send(f'forward {-z_move}', 0.1)
 
-            print(f"x: {x}, y: {y}, w: {w}, h: {h}")
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
 
