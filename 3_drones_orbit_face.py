@@ -5,6 +5,8 @@ import time
 import subprocess
 from subprocess import Popen, PIPE
 import math
+from facetracking import detect_face
+import cv2
 
 # IPs of Tellos
 tello_addresses_og = [   

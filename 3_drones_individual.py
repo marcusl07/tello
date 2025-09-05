@@ -5,7 +5,7 @@ import time
 import subprocess
 from subprocess import Popen, PIPE
 
-# IP and port of Tellos
+# IP of Tellos
 tello_addresses_og = [   
 	"192.168.0.152",
     "192.168.0.167",
@@ -13,6 +13,10 @@ tello_addresses_og = [
 
 tello_addresses = tello_addresses_og[:]
 
+#IP of your computer
+local_address = '192.168.0.138'
+
+#check which tellos are actually online
 for ip in tello_addresses_og:
     toping = Popen(['ping', '-c', '1', '-W', '50', ip], stdout=PIPE)
     output = toping.communicate()[0]
@@ -26,12 +30,9 @@ tello_port = 8889
 
 NUM_TELLOS = len(tello_addresses)
 
-# IP and port of local computer
 local_ports = []
 for x in range(NUM_TELLOS):
 	local_ports.append(9010+x)
-
-local_address = '192.168.0.138'
 
 
 socks = []
@@ -87,18 +88,14 @@ receiveThread.start()
 # Put Tello into command mode
 send("command", 3)
 
-send("streamon", 3)
 
+# Send the takeoff command
+send("takeoff", 3)
 
-# # Send the takeoff command
-# send("takeoff", 3)
+send("flip b", 3)
 
-# send("flip b", 3)
-
-# # Land
-# send("land", 3)
-
-send("streamoff", 3)
+# Land
+send("land", 3)
 
 # Print message
 print("Mission completed successfully!")
