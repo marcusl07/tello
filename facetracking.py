@@ -11,42 +11,32 @@ from networkScan import scan_network
 # tello_address = scan_network()
 
 # If you know the IP address of your Tello, you can hardcode it here
-tello_address = ["192.168.0.167"]
+tello_address = "192.168.0.177"
+#Check your own IP address by clicking into your network settings, then paste it here
+local_address = '192.168.0.138'#'192.168.0.125'
 
 tello_port = 8889
 
-<<<<<<< Updated upstream:facetracking.py
-NUM_TELLOS = len(tello_address)
-local_ports = [9010]
-local_address = '192.168.0.125'
-=======
-NUM_TELLOS = len(tello_addresses)
-
-# IP and port of local computer
-local_ports = []
-for x in range(NUM_TELLOS):
-	local_ports.append(9010+x)
-
-# local_address = '192.168.0.125'
-local_address = '192.168.0.138'
->>>>>>> Stashed changes:nolag.py
-
-socks = []
+local_port = 9010
 
 # Create a UDP connection that we'll send the command to
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 # Bind to the local address and port
-sock.bind((local_address, local_ports[0]))
+sock.bind((local_address, local_port))
 
-# Save the UDP connection to socks array
-socks.append(socket.socket(socket.AF_INET, socket.SOCK_DGRAM))
+#Init PID objects
+#increase p to make the drone more sensitive, increase d if the drone is overshooting/oscillating, increase i if the drone is not centering the face even after a long time.
+#however i is a bit buggy, especially if it loses track of the face, so be careful as the drone can go crazy.
+x_pid = PID(p=0.05, i=0, d=0.05, _min=-90, _max=90, margin=10)
+y_pid = PID(p=0.15, i=0, d=0.1, _min=-100, _max=100, margin=6)
+z_pid = PID(p=0.75, i=0, d=0.1, _min=-100, _max=100, margin=10)
 
 # Send the message to Tello and allow for a delay in seconds
 def send(message, delay):
     # Try to send the message otherwise print the exception
     try:
-        socks[0].sendto(message.encode(), (tello_address[0], tello_port))
+        sock.sendto(message.encode(), (tello_address, tello_port))
         print("Sending message: " + message)
     except Exception as e:
         print("Error sending: " + str(e))
@@ -61,12 +51,12 @@ def receive():
     while OK:
         # Try to receive the message otherwise print the exception
             try:
-                response = socks[0].recvfrom(128)
+                response = sock.recvfrom(128)
                 print(f"Received message: from Tello EDU #{0}: {response.decode(encoding='utf-8')}")
             except Exception as e:
                 # If there's an error close the socket and break out of the loop
                 print("Error receiving: " + str(e))
-                socks[0].close()
+                sock.close()
                 OK = False
                 break
 
@@ -79,74 +69,53 @@ def detect_face(frame):
 
     return face
 
-def main():
-    if NUM_TELLOS == 0:
-        print("No Tello drones found.")
-        return
-
-    #init Face
-    face_obj = Face()
-    
-    #Init PID objects
-    x_pid = PID(p=0.05, i=0, d=0.05, _min=-90, _max=90, margin=10)
-    y_pid = PID(p=0.15, i=0, d=0.1, _min=-100, _max=100, margin=6)
-    z_pid = PID(p=0.75, i=0, d=0.1, _min=-100, _max=100, margin=10)
+def main(): 
     # Create and start a listening thread that runs in the background
     # This utilizes our receive functions and will continuously monitor for incoming messages
     receiveThread = threading.Thread(target=receive)
     receiveThread.daemon = True
     receiveThread.start()
 
-    drone = tello.Tello(host=tello_address[0])
+    #Create a tello object used to get video stream
+    drone = tello.Tello(host=tello_address)
     drone.connect()
     # Put Tello into command mode
     send("command", 3)
     
+    #Turn on camera
     send("streamon", 3)
 
+    #Get object to get video frames
     frame_read = drone.get_frame_read()
     time.sleep(0.5)
     H, W, _ = frame_read.frame.shape
 
-    # send("takeoff", 3)
+    send("takeoff", 3)
 
+    # Keep detecting faces and following them using PID control
+    # ctrl+c to exit the while loop
     while True:
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
-            break
-
         # Capture a frame from the Tello video stream
         frame = frame_read.frame
 
-<<<<<<< Updated upstream:facetracking.py
         face = detect_face(frame)
-=======
-        # face = record_tello.detect_face(frame)
-
-        face_obj.update(frame)
-
-        face = []
-
-        if face_obj.inited:
-            if len(face_obj.face_avg) > 0:
-                face = face_obj.face_avg
-            elif len(face_obj.face_predict) > 0:
-                face = face_obj.face_predict
->>>>>>> Stashed changes:nolag.py
 
         if len(face) > 0:
             (x, y, w, h) = face[0] #xy is top left corner
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 4)
 
+            #how much the drone should move in the x, y, and z directions
             x_move = int(x_pid.getAmount(x+w/2 - W/2))
             y_move = int(y_pid.getAmount(y+h/2 - H/2))
             z_move = int(z_pid.getAmount(w-100))
 
+            #minimum move is 20cm. the tello drone will ignore any command less than that.
             if y_move >= 20:
                 send(f'down {y_move}', 0.1)
             elif y_move <= -20:
                 send(f'up {-y_move}', 0.1)
 
+            #minimum rotation is 1 degree.
             if x_move >= 1:
                 send(f"cw {x_move}", 0.1)
             elif x_move <= -1:
@@ -157,15 +126,10 @@ def main():
             elif z_move <= -20:
                 send(f'forward {-z_move}', 0.1)
 
-
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
 
         # Display the captured frame in a window
         cv2.imshow("Frame", frame)
-
-        # Check for the 'q' key press to exit the loop and stop recording
-        if cv2.waitKey(33) & 0xFF == ord('q'):  # Change 33 to 1 for 30fps
-            break
 
     # # Land
     send("land", 3)
@@ -175,9 +139,8 @@ def main():
     # Print message
     print("Mission completed successfully!")
 
-    # Close the sockets
-    for sock in socks:
-        sock.close()
+    # Close the socket
+    sock.close()
 
 
 if __name__ == "__main__":
