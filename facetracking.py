@@ -15,9 +15,21 @@ tello_address = ["192.168.0.167"]
 
 tello_port = 8889
 
+<<<<<<< Updated upstream:facetracking.py
 NUM_TELLOS = len(tello_address)
 local_ports = [9010]
 local_address = '192.168.0.125'
+=======
+NUM_TELLOS = len(tello_addresses)
+
+# IP and port of local computer
+local_ports = []
+for x in range(NUM_TELLOS):
+	local_ports.append(9010+x)
+
+# local_address = '192.168.0.125'
+local_address = '192.168.0.138'
+>>>>>>> Stashed changes:nolag.py
 
 socks = []
 
@@ -71,6 +83,9 @@ def main():
     if NUM_TELLOS == 0:
         print("No Tello drones found.")
         return
+
+    #init Face
+    face_obj = Face()
     
     #Init PID objects
     x_pid = PID(p=0.05, i=0, d=0.05, _min=-90, _max=90, margin=10)
@@ -93,7 +108,7 @@ def main():
     time.sleep(0.5)
     H, W, _ = frame_read.frame.shape
 
-    send("takeoff", 3)
+    # send("takeoff", 3)
 
     while True:
         key = cv2.waitKey(1) & 0xFF
@@ -103,7 +118,21 @@ def main():
         # Capture a frame from the Tello video stream
         frame = frame_read.frame
 
+<<<<<<< Updated upstream:facetracking.py
         face = detect_face(frame)
+=======
+        # face = record_tello.detect_face(frame)
+
+        face_obj.update(frame)
+
+        face = []
+
+        if face_obj.inited:
+            if len(face_obj.face_avg) > 0:
+                face = face_obj.face_avg
+            elif len(face_obj.face_predict) > 0:
+                face = face_obj.face_predict
+>>>>>>> Stashed changes:nolag.py
 
         if len(face) > 0:
             (x, y, w, h) = face[0] #xy is top left corner
