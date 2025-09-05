@@ -11,6 +11,8 @@ def scan_network():
     start = 0
     drones = []
 
+    
+
     for ip in ip_net.hosts():
         i += 1
         if i < start:
@@ -26,6 +28,7 @@ def scan_network():
         # Print whether or not device is online
         if hostalive == 0:
             drone = tello.Tello(host=ip)
+            
             try:
                 drone.connect()
                 drones.append(ip)

@@ -11,9 +11,9 @@ from networkScan import scan_network
 # tello_address = scan_network()
 
 # If you know the IP address of your Tello, you can hardcode it here
-tello_address = "192.168.0.177"
+tello_address = "192.168.0.167"
 #Check your own IP address by clicking into your network settings, then paste it here
-local_address = '192.168.0.138'#'192.168.0.125'
+local_address = '192.168.0.125'
 
 tello_port = 8889
 
@@ -93,7 +93,6 @@ def main():
     send("takeoff", 3)
 
     # Keep detecting faces and following them using PID control
-    # ctrl+c to exit the while loop
     while True:
         # Capture a frame from the Tello video stream
         frame = frame_read.frame
@@ -128,20 +127,16 @@ def main():
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
 
-        # Display the captured frame in a window
+        # Display the captured frame in a window. 
+        # To land the drone and stop the video press 'q' while focused on the window.
         cv2.imshow("Frame", frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
-    # # Land
-    send("land", 3)
-
-    send("streamoff", 3)
-
-    # Print message
-    print("Mission completed successfully!")
-
-    # Close the socket
-    sock.close()
-
+    # Shutdown
+    send("land", 1)
+    send("streamoff", 1)
+    sock.close() 
 
 if __name__ == "__main__":
     main()
