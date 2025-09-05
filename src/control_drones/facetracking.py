@@ -4,8 +4,8 @@ import threading
 import time
 import cv2
 from djitellopy import tello
-from pid import PID
-from networkScan import scan_network
+from ..pid import PID
+from ..networkScan import scan_network
 
 # Uncomment to find Tello drones on the network.
 # tello_address = scan_network()
