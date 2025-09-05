@@ -7,7 +7,7 @@ This project demonstrates face tracking with the Tello Talent drone using OpenCV
 - **Face Tracking:** Leveraging `cv2` for real-time face detection and tracking.
 - **Drone Swarm Control:** Coordinate multiple Tello drones using DJITelloPy for synchronized movement and tasks.
 
-Some code for sending and receiving commands in face tracking and discovering drones on the network is inspired by and adapted from [DroneBlocks-TelloEDU-Python](https://github.com/dbaldwin/DroneBlocks-TelloEDU-Python/tree/master).
+Some code for sending and receiving commands in face tracking and discovering drones on the network is inspired by and adapted from [DroneBlocks-TelloEDU-Python](https://github.com/dbaldwin/DroneBlocks-TelloEDU-Python).
 
 ## Requirements
 
@@ -22,5 +22,11 @@ Some code for sending and receiving commands in face tracking and discovering dr
     ```bash
     pip install opencv-python djitellopy
     ```
-2. Connect your computer to the Tello drone Wi-Fi network.
+2. Use the `networkscan` module to automatically discover and connect to your Tello drones on the network.  
+   For example:
+    ```python
+    from networkscan import scan_network
+    drones = scan_network()
+    ```
+   This replaces manually connecting your computer to each drone Wi-Fi network.
 3. Run the face tracking script to start controlling the drone(s).
