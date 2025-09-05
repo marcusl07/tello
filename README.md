@@ -16,6 +16,10 @@ Some code for sending and receiving commands in face tracking and discovering dr
 - [DJITelloPy](https://github.com/damiafuentes/DJITelloPy)
 - Tello Talent drone(s)
 
+## Documentation
+
+More information can be found in this [Google doc](https://docs.google.com/document/d/1CxbTmgXrlJxtniIohy4FWX13uEHygdl2uAXwy9Pemxk/edit?usp=sharing).
+
 ## Usage
 
 1. Install requirements:
